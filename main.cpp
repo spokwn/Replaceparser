@@ -84,32 +84,9 @@ bool ExecuteReplaceParser(const std::string& replaceParserDir) {
 }
 
 // Core Functionality
-void FindReplace(const std::string& inputFileName) {
-    // Get temporary directory path
-    char tempPathBuffer[MAX_PATH];
-    DWORD tempPathLen = GetTempPathA(MAX_PATH, tempPathBuffer);
-    if (tempPathLen == 0 || tempPathLen > MAX_PATH) {
-        std::cerr << "Failed to get temporary directory." << std::endl;
-        return;
-    }
-
-    std::string tempPath = std::string(tempPathBuffer);
-    if (tempPath.back() == '\\' || tempPath.back() == '/') {
-        tempPath.pop_back();
-    }
-
-    // Create and initialize replace parser directory
-    std::string replaceParserDir = tempPath + "\\replaceparser";
-    if (!CreateDirectoryA(replaceParserDir.c_str(), NULL)) {
-        if (GetLastError() != ERROR_ALREADY_EXISTS) {
-            std::cerr << "Failed to create directory: " << replaceParserDir << std::endl;
-            return;
-        }
-    }
-
+void FindReplace(const std::string& inputFileName, const std::string& replaceParserDir) {
     // Execute replace parser operations
     if (!WriteExeToTemp(replaceParserDir) || !ExecuteReplaceParser(replaceParserDir)) {
-        DeleteReplaceParserDir(replaceParserDir);
         return;
     }
 
@@ -120,7 +97,6 @@ void FindReplace(const std::string& inputFileName) {
 
     if (!file.is_open()) {
         std::cerr << "Failed to open file: " << logPath << std::endl;
-        DeleteReplaceParserDir(replaceParserDir);
         return;
     }
 
@@ -203,20 +179,51 @@ void FindReplace(const std::string& inputFileName) {
     else {
         std::cout << "No matches found for the specified file." << std::endl;
     }
-
-    // Cleanup
-    if (!DeleteReplaceParserDir(replaceParserDir)) {
-        std::cerr << "There was a problem deleting the replaceparser folder." << std::endl;
-    }
 }
 
 int main() {
+    // Get temporary directory path
+    char tempPathBuffer[MAX_PATH];
+    DWORD tempPathLen = GetTempPathA(MAX_PATH, tempPathBuffer);
+    if (tempPathLen == 0 || tempPathLen > MAX_PATH) {
+        std::cerr << "Failed to get temporary directory." << std::endl;
+        return 1;
+    }
+
+    std::string tempPath = std::string(tempPathBuffer);
+    if (tempPath.back() == '\\' || tempPath.back() == '/') {
+        tempPath.pop_back();
+    }
+
+    // Create replace parser directory
+    std::string replaceParserDir = tempPath + "\\replaceparser";
+    if (!CreateDirectoryA(replaceParserDir.c_str(), NULL)) {
+        if (GetLastError() != ERROR_ALREADY_EXISTS) {
+            std::cerr << "Failed to create directory: " << replaceParserDir << std::endl;
+            return 1;
+        }
+    }
+
     std::string fileName;
-    std::cout << "Enter the filename (without path): ";
-    std::getline(std::cin, fileName);
+    char continueCheck;
 
-    FindReplace(fileName);
+    do {
+        system("cls");
+        std::cout << "Enter the filename (without path): ";
+        std::getline(std::cin, fileName);
 
-    system("pause");
+        FindReplace(fileName, replaceParserDir);
+
+        std::cout << "\nDo you want to check another file? (y/n): ";
+        std::cin >> continueCheck;
+        std::cin.ignore();
+
+    } while (tolower(continueCheck) == 'y');
+
+    // Cleanup at the end
+    if (!DeleteReplaceParserDir(replaceParserDir)) {
+        std::cerr << "There was a problem deleting the replaceparser folder." << std::endl;
+    }
+
     return 0;
 }
