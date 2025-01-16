@@ -68,6 +68,10 @@ std::vector<ReplaceFileStruct> ReplaceScanner::scan(const std::string& filePathO
             replaceType = "Type";
             pattern = "Type pattern found in file: ";
         }
+        else if (line.rfind("Delete pattern found in file: ", 0) == 0) {
+            replaceType = "Delete";
+            pattern = "Delete pattern found in file: ";
+        }
         else {
             continue;
         }
